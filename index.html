@@ -17,6 +17,7 @@ body{
 }
 
 .screen{display:none;}
+
 button{
   padding:10px;
   margin:5px;
@@ -26,8 +27,12 @@ button{
   border-radius:8px;
 }
 
-#slot3d{display:flex;justify-content:center;gap:10px;margin:20px;}
-.reel{width:80px;height:80px;background:#111;font-size:40px;display:flex;align-items:center;justify-content:center;}
+.topbar{
+  position:sticky;
+  top:0;
+  background:#111;
+  padding:10px;
+}
 </style>
 </head>
 
@@ -36,12 +41,17 @@ button{
 <div id="auth">
   <h1>🎰 PE P P O CASINO</h1>
   <input id="nick" placeholder="nick"><br>
-  <input id="pass" type="password" placeholder="pass"><br>
   <button onclick="login()">LOGIN</button>
 </div>
 
-<div id="menu" class="screen">
-  <h2>MENU</h2>
+<!-- TOP HOME BAR (sempre visibile quando loggato) -->
+<div id="topbar" style="display:none;" class="topbar">
+  <button onclick="show('home')">🏠 HOME</button>
+</div>
+
+<!-- HOME -->
+<div id="home" class="screen">
+  <h2>HOME</h2>
   <button onclick="show('slot')">🎰 Slot</button>
   <button onclick="show('shop')">🏪 Shop</button>
   <button onclick="show('bp')">🎫 Battle Pass</button>
@@ -49,33 +59,33 @@ button{
   <button onclick="show('lb')">🏆 Classifica</button>
 </div>
 
+<!-- SLOT -->
 <div id="slot" class="screen">
-  <div id="slot3d">
-    <div class="reel" id="r1">❓</div>
-    <div class="reel" id="r2">❓</div>
-    <div class="reel" id="r3">❓</div>
-  </div>
-  <button onclick="spin()">SPIN 🎰</button>
+  <h2>🎰 SLOT</h2>
+  <button onclick="spin()">SPIN</button>
 </div>
 
+<!-- SHOP -->
 <div id="shop" class="screen">
   <h2>🏪 SHOP</h2>
-  <button onclick="buy('luck')">🍀 Luck</button>
-  <button onclick="buy('bonus')">💰 Bonus</button>
+  <button onclick="buy('luck')">Luck</button>
 </div>
 
+<!-- BATTLE PASS -->
 <div id="bp" class="screen">
-  <h2>🎫 Battle Pass</h2>
+  <h2>🎫 BATTLE PASS</h2>
   <div id="bpUI"></div>
 </div>
 
+<!-- MISSIONI -->
 <div id="ms" class="screen">
-  <h2>📅 Missioni</h2>
+  <h2>📅 MISSIONI</h2>
   <div id="msUI"></div>
 </div>
 
+<!-- LEADERBOARD -->
 <div id="lb" class="screen">
-  <h2>🏆 Leaderboard</h2>
+  <h2>🏆 CLASSIFICA</h2>
   <div id="lbUI"></div>
 </div>
 
@@ -101,17 +111,19 @@ function login(){
   }
 
   cur=n;
-  auth.style.display="none";
-  menu.style.display="block";
 
-  show("menu");
+  auth.style.display="none";
+  topbar.style.display="block";
+
+  show("home");
 }
 
 /* NAV */
 function show(s){
+
   document.querySelectorAll(".screen").forEach(x=>x.style.display="none");
 
-  if(s==="menu")menu.style.display="block";
+  if(s==="home")home.style.display="block";
   if(s==="slot")slot.style.display="block";
   if(s==="shop")shop.style.display="block";
   if(s==="bp")bp.style.display="block";
@@ -132,10 +144,6 @@ function spin(){
     symbols[Math.floor(Math.random()*symbols.length)]
   ];
 
-  r1.innerText=r[0];
-  r2.innerText=r[1];
-  r3.innerText=r[2];
-
   let win=0;
 
   if(r[0]===r[1]&&r[1]===r[2]){
@@ -152,8 +160,8 @@ function spin(){
   bp.xp+=win?20:5;
 
   if(bp.xp>=100){
-    bp.xp=0;
     bp.level++;
+    bp.xp=0;
   }
 
   if(u.xp>=100){
@@ -168,40 +176,27 @@ function spin(){
 /* SHOP */
 function buy(t){
   let u=users[cur];
-
-  if(t==="luck"&&u.credits>=500){
-    u.credits-=500;
-  }
-
-  if(t==="bonus"&&u.credits>=1000){
-    u.credits-=1000;
-  }
-
+  if(t==="luck"&&u.credits>=500)u.credits-=500;
   save();update();
 }
 
-/* UI BP */
+/* UI */
 function updateBP(){
-  let b=users[cur].battlepass;
-  bpUI.innerHTML=`Lv:${b.level} XP:${b.xp}/100`;
+  bpUI.innerHTML=`BP Lv ${users[cur].battlepass.level}`;
 }
 
-/* MISSIONS */
 function updateMS(){
-  let m=users[cur].missions;
-  msUI.innerHTML=`Spins:${m.spins}<br>Wins:${m.wins}`;
+  msUI.innerHTML=`Spins ${users[cur].missions.spins}<br>Wins ${users[cur].missions.wins}`;
 }
 
-/* LB */
 function updateLB(){
   let arr=Object.entries(users)
   .sort((a,b)=>b[1].credits-a[1].credits)
   .slice(0,10);
 
-  lbUI.innerHTML=arr.map((x,i)=>`#${i+1} ${x[0]} - ${x[1].credits}`).join("<br>");
+  lbUI.innerHTML=arr.map((x,i)=>`#${i+1} ${x[0]} ${x[1].credits}`).join("<br>");
 }
 
-/* UPDATE */
 function update(){
   if(!cur)return;
   updateBP();
@@ -211,17 +206,6 @@ function update(){
 
 function save(){
   localStorage.setItem("u",JSON.stringify(users));
-}
-
-/* PWA AUTO SW */
-if("serviceWorker" in navigator){
-  const sw = `
-    self.addEventListener('fetch',e=>{
-      e.respondWith(fetch(e.request));
-    });
-  `;
-  const blob = new Blob([sw], {type:"application/javascript"});
-  navigator.serviceWorker.register(URL.createObjectURL(blob));
 }
 
 </script>

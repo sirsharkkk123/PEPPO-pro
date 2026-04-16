@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>PEPPO SLOT</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  color:white;
+  text-align:center;
+  background:radial-gradient(circle,#1a0000,#000);
+  transition:0.3s;
+}
+
+button{
+  padding:10px 15px;
+  margin:5px;
+  background:red;
+  border:none;
+  color:white;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+input{
+  padding:10px;
+  margin:5px;
+}
+
+/* SCREENS */
+.screen{display:none;}
+.active{display:block;}
+
+/* SLOT */
+#slot3d{
+  display:flex;
+  justify-content:center;
+  gap:15px;
+  perspective:1200px;
+  margin:30px;
+}
+
+.reel3d{
+  width:80px;
+  height:80px;
+  font-size:50px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#111;
+  border-radius:10px;
+}
+
+/* LEVA */
+#lever{
+  width:60px;
+  margin:auto;
+  cursor:pointer;
+}
+
+#stick{
+  width:8px;
+  height:100px;
+  background:red;
+  margin:auto;
+  transition:0.2s;
+}
+
+#lever.active #stick{
+  transform:rotate(25deg);
+}
+
+/* SKINS */
+.skin-neon{
+  background:radial-gradient(circle,#001a1a,#000);
+}
+
+.skin-neon button{
+  background:#00ffff;
+  color:#000;
+}
+
+.skin-gold{
+  background:radial-gradient(circle,#2b1a00,#000);
+}
+
+.skin-gold button{
+  background:gold;
+  color:#000;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="authBox">
+  <h1>🎰 PEPPO SLOT</h1>
+  <input id="nick" placeholder="Nickname"><br>
+  <input id="pass" type="password" placeholder="Password"><br>
+  <button onclick="register()">REGISTRA</button>
+  <button onclick="login()">ACCEDI</button>
+</div>
+
+<!-- MENU -->
+<div id="menuBox" class="screen">
+  <h2>🎮 MENU</h2>
+
+  <button onclick="show('slot')">🎰 SLOT</button>
+  <button onclick="show('rank')">🏆 CLASSIFICA</button>
+  <button onclick="show('balance')">💰 SALDO</button>
+
+  <h3>🎨 Skin</h3>
+  <button onclick="setSkin('classic')">Classic</button>
+  <button onclick="setSkin('neon')">Neon</button>
+  <button onclick="setSkin('gold')">Gold</button>
+
+  <br><br>
+  🔊 Volume:
+  <input id="vol" type="range" min="0" max="100" value="10">
+
+  <br>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<!-- SLOT -->
+<div id="slotScreen" class="screen">
+  <h2>🎰 SLOT</h2>
+
+  <div id="slot3d">
+    <div class="reel3d" id="r1">❓</div>
+    <div class="reel3d" id="r2">❓</div>
+    <div class="reel3d" id="r3">❓</div>
+  </div>
+
+  <div id="lever" onclick="pullLever()">
+    <div id="stick"></div>
+  </div>
+
+  <button onclick="show('menu')">⬅ MENU</button>
+</div>
+
+<!-- RANK -->
+<div id="rankScreen" class="screen">
+  <h2>🏆 CLASSIFICA</h2>
+  <div id="rank"></div>
+  <button onclick="show('menu')">⬅ MENU</button>
+</div>
+
+<!-- BALANCE -->
+<div id="balanceScreen" class="screen">
+  <h2>💰 SALDO</h2>
+  <h3 id="credits"></h3>
+  <h3 id="level"></h3>
+  <button onclick="show('menu')">⬅ MENU</button>
+</div>
+
+<script>
+
+// DATA
+let users = JSON.parse(localStorage.getItem("u")||"{}");
+let cur=null;
+
+let symbols=["🍒","🍋","💎","7️⃣","⭐"];
+
+// AUDIO
+let ctx, gain;
+
+function initAudio(){
+  if(ctx) return;
+  ctx = new AudioContext();
+  gain = ctx.createGain();
+  gain.connect(ctx.destination);
+}
+
+// MUSIC
+function beep(f=300,d=0.1){
+  let o=ctx.createOscillator();
+  let g=ctx.createGain();
+  o.frequency.value=f;
+  o.connect(g);
+  g.connect(gain);
+  g.gain.value=0.1;
+  o.start();
+  o.stop(ctx.currentTime+d);
+}
+
+// REGISTER
+function register(){
+  let n=nick.value,p=pass.value;
+  if(!n||!p)return;
+
+  users[n]={credits:1000,level:1,xp:0,pass:p};
+  localStorage.setItem("u",JSON.stringify(users));
+}
+
+// LOGIN
+function login(){
+  let n=nick.value,p=pass.value;
+  if(!users[n]||users[n].pass!==p)return alert("no");
+
+  cur=n;
+  authBox.style.display="none";
+  menuBox.style.display="block";
+  show("menu");
+
+  initAudio();
+}
+
+// NAV
+function show(s){
+  ["menuBox","slotScreen","rankScreen","balanceScreen"].forEach(i=>{
+    document.getElementById(i).style.display="none";
+  });
+
+  if(s==="menu")menuBox.style.display="block";
+  if(s==="slot")slotScreen.style.display="block";
+  if(s==="rank")rankScreen.style.display="block";
+  if(s==="balance")balanceScreen.style.display="block";
+
+  update();
+}
+
+// SLOT
+let spinning=false;
+
+function pullLever(){
+  if(spinning)return;
+
+  initAudio();
+  beep(120);
+
+  let u=users[cur];
+  if(u.credits<10)return;
+
+  u.credits-=10;
+  spinning=true;
+
+  let reels=[r1,r2,r3];
+
+  let it=setInterval(()=>{
+    reels.forEach(r=>{
+      r.innerText=symbols[Math.floor(Math.random()*symbols.length)];
+    });
+  },80);
+
+  setTimeout(()=>{
+    clearInterval(it);
+
+    let res=reels.map(()=>symbols[Math.floor(Math.random()*symbols.length)]);
+
+    r1.innerText=res[0];
+    r2.innerText=res[1];
+    r3.innerText=res[2];
+
+    let win=0;
+
+    if(res[0]===res[1]&&res[1]===res[2]){
+      win=200*u.bonus||200;
+    }
+
+    u.credits+=win;
+    u.xp+=win?50:10;
+
+    if(u.xp>=100){
+      u.level++;
+      u.xp=0;
+    }
+
+    localStorage.setItem("u",JSON.stringify(users));
+
+    update();
+    spinning=false;
+
+  },1200);
+}
+
+// SKIN
+function setSkin(s){
+  document.body.classList.remove("skin-neon","skin-gold");
+
+  if(s==="neon")document.body.classList.add("skin-neon");
+  if(s==="gold")document.body.classList.add("skin-gold");
+}
+
+// UPDATE
+function update(){
+  if(!cur)return;
+  let u=users[cur];
+
+  credits.innerText="💰 "+u.credits;
+  level.innerText="⭐ "+u.level;
+
+  let arr=Object.entries(users)
+  .sort((a,b)=>b[1].credits-a[1].credits);
+
+  rank.innerHTML=arr.map((x,i)=>`${i+1}. ${x[0]} ${x[1].credits}`).join("<br>");
+}
+
+function logout(){
+  location.reload();
+}
+
+</script>
+
+</body>
+</html>

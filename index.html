@@ -20,6 +20,7 @@ button{
   border:none;
   color:white;
   border-radius:8px;
+  cursor:pointer;
 }
 
 input{padding:8px;margin:5px;}
@@ -33,7 +34,6 @@ input{padding:8px;margin:5px;}
   padding:10px;
 }
 
-/* SLOT 3D */
 #slot3d{
   width:200px;
   height:120px;
@@ -74,7 +74,7 @@ input{padding:8px;margin:5px;}
   <button onclick="login()">LOGIN</button>
 </div>
 
-<!-- TOP -->
+<!-- TOPBAR -->
 <div id="topbar" style="display:none;" class="topbar">
   <button onclick="show('home')">🏠 HOME</button>
   <button onclick="logout()">LOGOUT</button>
@@ -101,8 +101,8 @@ input{padding:8px;margin:5px;}
   <button onclick="spin()">SPIN 🎰</button>
 
   <div>
-    <input id="code" placeholder="codice">
-    <button onclick="useCode()">🎁</button>
+    <input id="code" placeholder="codice segreto">
+    <button onclick="useCode()">🎁 RISCATTA</button>
   </div>
 
 </div>
@@ -110,8 +110,8 @@ input{padding:8px;margin:5px;}
 <!-- SHOP -->
 <div id="shop" class="screen">
   <h2>SHOP</h2>
-  <button onclick="buyLuck()">Luck</button>
-  <button onclick="buyBonus()">Bonus</button>
+  <button onclick="buyLuck()">Luck + (500)</button>
+  <button onclick="buyBonus()">Bonus + (1000)</button>
 </div>
 
 <!-- CLASSIFICA -->
@@ -120,9 +120,9 @@ input{padding:8px;margin:5px;}
   <div id="rank"></div>
 </div>
 
-<!-- AUDIO -->
+<!-- VOLUME -->
 <div>
-  🔊 Volume <input type="range" min="0" max="1" step="0.01" onchange="vol=this.value">
+  🔊 <input type="range" min="0" max="1" step="0.01" onchange="vol=this.value">
 </div>
 
 <script>
@@ -164,7 +164,7 @@ function vib(){
   }
 }
 
-/* BUILD SLOT 3D */
+/* SLOT BUILD */
 function build(){
   let reel=document.getElementById("reel");
   reel.innerHTML="";
@@ -207,9 +207,13 @@ function login(){
   let p=pass.value;
 
   if(!users[n]||users[n].password!==p)
-    return alert("no");
+    return alert("errore");
 
   currentUser=n;
+
+  if(!users[n].usedCodes){
+    users[n].usedCodes={};
+  }
 
   auth.style.display="none";
   topbar.style.display="block";
@@ -228,15 +232,15 @@ function show(s){
   if(s==="lb")lb.style.display="block";
 }
 
-/* SLOT 3D SPIN */
+/* SLOT */
 function spin(){
 
   let u=users[currentUser];
 
+  if(u.credits<10)return alert("no crediti");
+
   vib();
   music();
-
-  if(u.credits<10)return;
 
   u.credits-=10;
 
@@ -261,49 +265,71 @@ function spin(){
     u.xp=0;
   }
 
-  localStorage.setItem("peppo",JSON.stringify(users));
-
+  save();
   update();
 }
 
-/* SHOP */
+/* SHOP FIXED */
 function buyLuck(){
+
   let u=users[currentUser];
-  if(u.credits>=500)u.credits-=500;
-  localStorage.setItem("peppo",JSON.stringify(users));
+
+  if(u.credits<500)return alert("no");
+
+  u.credits-=500;
+  u.luck+=0.1;
+
+  save();
   update();
 }
 
 function buyBonus(){
+
   let u=users[currentUser];
-  if(u.credits>=1000)u.credits-=1000;
-  localStorage.setItem("peppo",JSON.stringify(users));
+
+  if(u.credits<1000)return alert("no");
+
+  u.credits-=1000;
+  u.bonus+=0.5;
+
+  save();
   update();
 }
 
-/* CODICI */
+/* CODICI FIXED */
 function useCode(){
-  let u=users[currentUser];
-  let c=code.value;
 
-  let r={
+  let u=users[currentUser];
+  let c=code.value.trim();
+
+  if(!u.usedCodes)u.usedCodes={};
+
+  let rewards={
     pippo13:1000000,
     peppino:10000
   };
 
-  if(!r[c])return;
+  if(!rewards[c])return alert("errato");
 
-  if(u.usedCodes[c])return;
+  if(u.usedCodes[c])return alert("già usato");
 
-  u.credits+=r[c];
+  u.credits+=rewards[c];
   u.usedCodes[c]=true;
 
-  localStorage.setItem("peppo",JSON.stringify(users));
+  save();
   update();
+
+  alert("OK!");
+}
+
+/* SAVE */
+function save(){
+  localStorage.setItem("peppo",JSON.stringify(users));
 }
 
 /* UI */
 function update(){
+
   let u=users[currentUser];
   if(!u)return;
 
@@ -311,13 +337,14 @@ function update(){
   level.innerText="⭐ "+u.level;
 
   let arr=Object.entries(users)
-  .sort((a,b)=>b[1].credits-a[1].credits);
+    .sort((a,b)=>b[1].credits-a[1].credits);
 
   rank.innerHTML=arr.map((x,i)=>
     `${i+1}. ${x[0]} - ${x[1].credits}`
   ).join("<br>");
 }
 
+/* LOGOUT */
 function logout(){
   currentUser=null;
   auth.style.display="block";

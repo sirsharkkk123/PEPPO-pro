@@ -2,305 +2,226 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>PEPPO SLOT</title>
+<title>Peppo Casino</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#ff0000">
 
 <style>
 body{
   margin:0;
   font-family:Arial;
+  background:radial-gradient(circle,#1a0000,#000);
   color:white;
   text-align:center;
-  background:radial-gradient(circle,#1a0000,#000);
-  transition:0.3s;
 }
 
+.screen{display:none;}
 button{
-  padding:10px 15px;
-  margin:5px;
-  background:red;
-  border:none;
-  color:white;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-input{
   padding:10px;
   margin:5px;
-}
-
-/* SCREENS */
-.screen{display:none;}
-.active{display:block;}
-
-/* SLOT */
-#slot3d{
-  display:flex;
-  justify-content:center;
-  gap:15px;
-  perspective:1200px;
-  margin:30px;
-}
-
-.reel3d{
-  width:80px;
-  height:80px;
-  font-size:50px;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  background:#111;
-  border-radius:10px;
-}
-
-/* LEVA */
-#lever{
-  width:60px;
-  margin:auto;
-  cursor:pointer;
-}
-
-#stick{
-  width:8px;
-  height:100px;
   background:red;
-  margin:auto;
-  transition:0.2s;
+  color:white;
+  border:none;
+  border-radius:8px;
 }
 
-#lever.active #stick{
-  transform:rotate(25deg);
-}
-
-/* SKINS */
-.skin-neon{
-  background:radial-gradient(circle,#001a1a,#000);
-}
-
-.skin-neon button{
-  background:#00ffff;
-  color:#000;
-}
-
-.skin-gold{
-  background:radial-gradient(circle,#2b1a00,#000);
-}
-
-.skin-gold button{
-  background:gold;
-  color:#000;
-}
+#slot3d{display:flex;justify-content:center;gap:10px;margin:20px;}
+.reel{width:80px;height:80px;background:#111;font-size:40px;display:flex;align-items:center;justify-content:center;}
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="authBox">
-  <h1>🎰 PEPPO SLOT</h1>
-  <input id="nick" placeholder="Nickname"><br>
-  <input id="pass" type="password" placeholder="Password"><br>
-  <button onclick="register()">REGISTRA</button>
-  <button onclick="login()">ACCEDI</button>
+<div id="auth">
+  <h1>🎰 PE P P O CASINO</h1>
+  <input id="nick" placeholder="nick"><br>
+  <input id="pass" type="password" placeholder="pass"><br>
+  <button onclick="login()">LOGIN</button>
 </div>
 
-<!-- MENU -->
-<div id="menuBox" class="screen">
-  <h2>🎮 MENU</h2>
-
-  <button onclick="show('slot')">🎰 SLOT</button>
-  <button onclick="show('rank')">🏆 CLASSIFICA</button>
-  <button onclick="show('balance')">💰 SALDO</button>
-
-  <h3>🎨 Skin</h3>
-  <button onclick="setSkin('classic')">Classic</button>
-  <button onclick="setSkin('neon')">Neon</button>
-  <button onclick="setSkin('gold')">Gold</button>
-
-  <br><br>
-  🔊 Volume:
-  <input id="vol" type="range" min="0" max="100" value="10">
-
-  <br>
-  <button onclick="logout()">Logout</button>
+<div id="menu" class="screen">
+  <h2>MENU</h2>
+  <button onclick="show('slot')">🎰 Slot</button>
+  <button onclick="show('shop')">🏪 Shop</button>
+  <button onclick="show('bp')">🎫 Battle Pass</button>
+  <button onclick="show('ms')">📅 Missioni</button>
+  <button onclick="show('lb')">🏆 Classifica</button>
 </div>
 
-<!-- SLOT -->
-<div id="slotScreen" class="screen">
-  <h2>🎰 SLOT</h2>
-
+<div id="slot" class="screen">
   <div id="slot3d">
-    <div class="reel3d" id="r1">❓</div>
-    <div class="reel3d" id="r2">❓</div>
-    <div class="reel3d" id="r3">❓</div>
+    <div class="reel" id="r1">❓</div>
+    <div class="reel" id="r2">❓</div>
+    <div class="reel" id="r3">❓</div>
   </div>
-
-  <div id="lever" onclick="pullLever()">
-    <div id="stick"></div>
-  </div>
-
-  <button onclick="show('menu')">⬅ MENU</button>
+  <button onclick="spin()">SPIN 🎰</button>
 </div>
 
-<!-- RANK -->
-<div id="rankScreen" class="screen">
-  <h2>🏆 CLASSIFICA</h2>
-  <div id="rank"></div>
-  <button onclick="show('menu')">⬅ MENU</button>
+<div id="shop" class="screen">
+  <h2>🏪 SHOP</h2>
+  <button onclick="buy('luck')">🍀 Luck</button>
+  <button onclick="buy('bonus')">💰 Bonus</button>
 </div>
 
-<!-- BALANCE -->
-<div id="balanceScreen" class="screen">
-  <h2>💰 SALDO</h2>
-  <h3 id="credits"></h3>
-  <h3 id="level"></h3>
-  <button onclick="show('menu')">⬅ MENU</button>
+<div id="bp" class="screen">
+  <h2>🎫 Battle Pass</h2>
+  <div id="bpUI"></div>
+</div>
+
+<div id="ms" class="screen">
+  <h2>📅 Missioni</h2>
+  <div id="msUI"></div>
+</div>
+
+<div id="lb" class="screen">
+  <h2>🏆 Leaderboard</h2>
+  <div id="lbUI"></div>
 </div>
 
 <script>
 
-// DATA
 let users = JSON.parse(localStorage.getItem("u")||"{}");
 let cur=null;
 
-let symbols=["🍒","🍋","💎","7️⃣","⭐"];
+const symbols=["🍒","🍋","💎","7️⃣","⭐"];
 
-// AUDIO
-let ctx, gain;
-
-function initAudio(){
-  if(ctx) return;
-  ctx = new AudioContext();
-  gain = ctx.createGain();
-  gain.connect(ctx.destination);
-}
-
-// MUSIC
-function beep(f=300,d=0.1){
-  let o=ctx.createOscillator();
-  let g=ctx.createGain();
-  o.frequency.value=f;
-  o.connect(g);
-  g.connect(gain);
-  g.gain.value=0.1;
-  o.start();
-  o.stop(ctx.currentTime+d);
-}
-
-// REGISTER
-function register(){
-  let n=nick.value,p=pass.value;
-  if(!n||!p)return;
-
-  users[n]={credits:1000,level:1,xp:0,pass:p};
-  localStorage.setItem("u",JSON.stringify(users));
-}
-
-// LOGIN
+/* LOGIN */
 function login(){
-  let n=nick.value,p=pass.value;
-  if(!users[n]||users[n].pass!==p)return alert("no");
+  let n=nick.value;
+
+  if(!users[n]){
+    users[n]={
+      credits:1000,
+      level:1,
+      xp:0,
+      battlepass:{level:1,xp:0},
+      missions:{spins:0,wins:0}
+    };
+  }
 
   cur=n;
-  authBox.style.display="none";
-  menuBox.style.display="block";
-  show("menu");
+  auth.style.display="none";
+  menu.style.display="block";
 
-  initAudio();
+  show("menu");
 }
 
-// NAV
+/* NAV */
 function show(s){
-  ["menuBox","slotScreen","rankScreen","balanceScreen"].forEach(i=>{
-    document.getElementById(i).style.display="none";
-  });
+  document.querySelectorAll(".screen").forEach(x=>x.style.display="none");
 
-  if(s==="menu")menuBox.style.display="block";
-  if(s==="slot")slotScreen.style.display="block";
-  if(s==="rank")rankScreen.style.display="block";
-  if(s==="balance")balanceScreen.style.display="block";
+  if(s==="menu")menu.style.display="block";
+  if(s==="slot")slot.style.display="block";
+  if(s==="shop")shop.style.display="block";
+  if(s==="bp")bp.style.display="block";
+  if(s==="ms")ms.style.display="block";
+  if(s==="lb")lb.style.display="block";
 
   update();
 }
 
-// SLOT
-let spinning=false;
-
-function pullLever(){
-  if(spinning)return;
-
-  initAudio();
-  beep(120);
+/* SLOT */
+function spin(){
 
   let u=users[cur];
-  if(u.credits<10)return;
 
-  u.credits-=10;
-  spinning=true;
+  let r=[
+    symbols[Math.floor(Math.random()*symbols.length)],
+    symbols[Math.floor(Math.random()*symbols.length)],
+    symbols[Math.floor(Math.random()*symbols.length)]
+  ];
 
-  let reels=[r1,r2,r3];
+  r1.innerText=r[0];
+  r2.innerText=r[1];
+  r3.innerText=r[2];
 
-  let it=setInterval(()=>{
-    reels.forEach(r=>{
-      r.innerText=symbols[Math.floor(Math.random()*symbols.length)];
-    });
-  },80);
+  let win=0;
 
-  setTimeout(()=>{
-    clearInterval(it);
+  if(r[0]===r[1]&&r[1]===r[2]){
+    win=500;
+    u.missions.wins++;
+  }
 
-    let res=reels.map(()=>symbols[Math.floor(Math.random()*symbols.length)]);
+  u.credits+=win;
+  u.missions.spins++;
 
-    r1.innerText=res[0];
-    r2.innerText=res[1];
-    r3.innerText=res[2];
+  u.xp+=10;
 
-    let win=0;
+  let bp=u.battlepass;
+  bp.xp+=win?20:5;
 
-    if(res[0]===res[1]&&res[1]===res[2]){
-      win=200*u.bonus||200;
-    }
+  if(bp.xp>=100){
+    bp.xp=0;
+    bp.level++;
+  }
 
-    u.credits+=win;
-    u.xp+=win?50:10;
+  if(u.xp>=100){
+    u.level++;
+    u.xp=0;
+  }
 
-    if(u.xp>=100){
-      u.level++;
-      u.xp=0;
-    }
-
-    localStorage.setItem("u",JSON.stringify(users));
-
-    update();
-    spinning=false;
-
-  },1200);
+  save();
+  update();
 }
 
-// SKIN
-function setSkin(s){
-  document.body.classList.remove("skin-neon","skin-gold");
+/* SHOP */
+function buy(t){
+  let u=users[cur];
 
-  if(s==="neon")document.body.classList.add("skin-neon");
-  if(s==="gold")document.body.classList.add("skin-gold");
+  if(t==="luck"&&u.credits>=500){
+    u.credits-=500;
+  }
+
+  if(t==="bonus"&&u.credits>=1000){
+    u.credits-=1000;
+  }
+
+  save();update();
 }
 
-// UPDATE
+/* UI BP */
+function updateBP(){
+  let b=users[cur].battlepass;
+  bpUI.innerHTML=`Lv:${b.level} XP:${b.xp}/100`;
+}
+
+/* MISSIONS */
+function updateMS(){
+  let m=users[cur].missions;
+  msUI.innerHTML=`Spins:${m.spins}<br>Wins:${m.wins}`;
+}
+
+/* LB */
+function updateLB(){
+  let arr=Object.entries(users)
+  .sort((a,b)=>b[1].credits-a[1].credits)
+  .slice(0,10);
+
+  lbUI.innerHTML=arr.map((x,i)=>`#${i+1} ${x[0]} - ${x[1].credits}`).join("<br>");
+}
+
+/* UPDATE */
 function update(){
   if(!cur)return;
-  let u=users[cur];
-
-  credits.innerText="💰 "+u.credits;
-  level.innerText="⭐ "+u.level;
-
-  let arr=Object.entries(users)
-  .sort((a,b)=>b[1].credits-a[1].credits);
-
-  rank.innerHTML=arr.map((x,i)=>`${i+1}. ${x[0]} ${x[1].credits}`).join("<br>");
+  updateBP();
+  updateMS();
+  updateLB();
 }
 
-function logout(){
-  location.reload();
+function save(){
+  localStorage.setItem("u",JSON.stringify(users));
+}
+
+/* PWA AUTO SW */
+if("serviceWorker" in navigator){
+  const sw = `
+    self.addEventListener('fetch',e=>{
+      e.respondWith(fetch(e.request));
+    });
+  `;
+  const blob = new Blob([sw], {type:"application/javascript"});
+  navigator.serviceWorker.register(URL.createObjectURL(blob));
 }
 
 </script>

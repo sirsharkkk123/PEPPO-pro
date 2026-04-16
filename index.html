@@ -14,13 +14,12 @@ body{
 }
 
 button{
-  padding:10px 12px;
+  padding:10px;
   margin:5px;
   background:red;
   border:none;
   color:white;
   border-radius:8px;
-  cursor:pointer;
 }
 
 input{padding:8px;margin:5px;}
@@ -74,7 +73,7 @@ input{padding:8px;margin:5px;}
   <button onclick="login()">LOGIN</button>
 </div>
 
-<!-- TOPBAR -->
+<!-- TOP -->
 <div id="topbar" style="display:none;" class="topbar">
   <button onclick="show('home')">🏠 HOME</button>
   <button onclick="logout()">LOGOUT</button>
@@ -100,10 +99,8 @@ input{padding:8px;margin:5px;}
 
   <button onclick="spin()">SPIN 🎰</button>
 
-  <div>
-    <input id="code" placeholder="codice segreto">
-    <button onclick="useCode()">🎁 RISCATTA</button>
-  </div>
+  <input id="code" placeholder="codice segreto">
+  <button onclick="useCode()">🎁 RISCATTA</button>
 
 </div>
 
@@ -120,9 +117,9 @@ input{padding:8px;margin:5px;}
   <div id="rank"></div>
 </div>
 
-<!-- VOLUME -->
+<!-- AUDIO -->
 <div>
-  🔊 <input type="range" min="0" max="1" step="0.01" onchange="vol=this.value">
+🔊 <input type="range" min="0" max="1" step="0.01" onchange="vol=this.value">
 </div>
 
 <script>
@@ -164,7 +161,7 @@ function vib(){
   }
 }
 
-/* SLOT BUILD */
+/* BUILD SLOT */
 function build(){
   let reel=document.getElementById("reel");
   reel.innerHTML="";
@@ -189,7 +186,7 @@ function register(){
 
   users[n]={
     password:p,
-    credits:1000,
+    credits:"1000",
     level:1,
     xp:0,
     luck:1,
@@ -211,9 +208,8 @@ function login(){
 
   currentUser=n;
 
-  if(!users[n].usedCodes){
+  if(!users[n].usedCodes)
     users[n].usedCodes={};
-  }
 
   auth.style.display="none";
   topbar.style.display="block";
@@ -237,12 +233,12 @@ function spin(){
 
   let u=users[currentUser];
 
-  if(u.credits<10)return alert("no crediti");
-
   vib();
   music();
 
-  u.credits-=10;
+  if(BigInt(u.credits)<10n) return alert("no crediti");
+
+  u.credits = (BigInt(u.credits)-10n).toString();
 
   let rand=Math.floor(Math.random()*symbols.length);
 
@@ -257,7 +253,8 @@ function spin(){
     win=200*u.bonus;
   }
 
-  u.credits+=win;
+  u.credits = (BigInt(u.credits)+BigInt(win)).toString();
+
   u.xp+=win?50:10;
 
   if(u.xp>=100){
@@ -269,34 +266,30 @@ function spin(){
   update();
 }
 
-/* SHOP FIXED */
+/* SHOP */
 function buyLuck(){
-
   let u=users[currentUser];
 
-  if(u.credits<500)return alert("no");
+  if(BigInt(u.credits)<500n) return;
 
-  u.credits-=500;
+  u.credits = (BigInt(u.credits)-500n).toString();
   u.luck+=0.1;
 
-  save();
-  update();
+  save();update();
 }
 
 function buyBonus(){
-
   let u=users[currentUser];
 
-  if(u.credits<1000)return alert("no");
+  if(BigInt(u.credits)<1000n) return;
 
-  u.credits-=1000;
+  u.credits = (BigInt(u.credits)-1000n).toString();
   u.bonus+=0.5;
 
-  save();
-  update();
+  save();update();
 }
 
-/* CODICI FIXED */
+/* CODICI SEGRETI */
 function useCode(){
 
   let u=users[currentUser];
@@ -305,15 +298,19 @@ function useCode(){
   if(!u.usedCodes)u.usedCodes={};
 
   let rewards={
-    pippo13:1000000,
-    peppino:10000
+    "nicoiolepeppe":"1000000000000000000000000000",
+    "pippo13":"1000000000",
+    "tamy92":"1000000",
+    "peppino":"10000",
+    "ph":"100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
   };
 
-  if(!rewards[c])return alert("errato");
+  if(!rewards[c]) return alert("errato");
 
-  if(u.usedCodes[c])return alert("già usato");
+  if(u.usedCodes[c]) return alert("già usato");
 
-  u.credits+=rewards[c];
+  u.credits = (BigInt(u.credits)+BigInt(rewards[c])).toString();
+
   u.usedCodes[c]=true;
 
   save();
@@ -333,11 +330,11 @@ function update(){
   let u=users[currentUser];
   if(!u)return;
 
-  credits.innerText="💰 "+u.credits;
+  credits.innerText="💰 "+u.credits.toString();
   level.innerText="⭐ "+u.level;
 
   let arr=Object.entries(users)
-    .sort((a,b)=>b[1].credits-a[1].credits);
+    .sort((a,b)=>BigInt(b[1].credits)-BigInt(a[1].credits));
 
   rank.innerHTML=arr.map((x,i)=>
     `${i+1}. ${x[0]} - ${x[1].credits}`

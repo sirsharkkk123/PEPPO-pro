@@ -2,10 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>Peppo Casino</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#ff0000">
+<title>PEPPO CASINO 3D</title>
 
 <style>
 body{
@@ -16,16 +13,18 @@ body{
   text-align:center;
 }
 
-.screen{display:none;}
-
 button{
-  padding:10px;
+  padding:10px 12px;
   margin:5px;
   background:red;
-  color:white;
   border:none;
+  color:white;
   border-radius:8px;
 }
+
+input{padding:8px;margin:5px;}
+
+.screen{display:none;}
 
 .topbar{
   position:sticky;
@@ -33,179 +32,296 @@ button{
   background:#111;
   padding:10px;
 }
+
+/* SLOT 3D */
+#slot3d{
+  width:200px;
+  height:120px;
+  margin:30px auto;
+  perspective:1000px;
+}
+
+.reel{
+  width:100%;
+  height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform 1s cubic-bezier(.2,.8,.2,1);
+}
+
+.face{
+  position:absolute;
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:60px;
+  background:rgba(255,0,0,0.1);
+  border:1px solid rgba(255,0,0,0.2);
+}
 </style>
 </head>
 
 <body>
 
+<!-- LOGIN -->
 <div id="auth">
-  <h1>🎰 PE P P O CASINO</h1>
+  <h1>🎰 PEPPO CASINO</h1>
   <input id="nick" placeholder="nick"><br>
+  <input id="pass" type="password" placeholder="pass"><br>
+  <button onclick="register()">REG</button>
   <button onclick="login()">LOGIN</button>
 </div>
 
-<!-- TOP HOME BAR (sempre visibile quando loggato) -->
+<!-- TOP -->
 <div id="topbar" style="display:none;" class="topbar">
   <button onclick="show('home')">🏠 HOME</button>
+  <button onclick="logout()">LOGOUT</button>
 </div>
 
 <!-- HOME -->
 <div id="home" class="screen">
   <h2>HOME</h2>
-  <button onclick="show('slot')">🎰 Slot</button>
-  <button onclick="show('shop')">🏪 Shop</button>
-  <button onclick="show('bp')">🎫 Battle Pass</button>
-  <button onclick="show('ms')">📅 Missioni</button>
-  <button onclick="show('lb')">🏆 Classifica</button>
+  <button onclick="show('game')">🎰 SLOT</button>
+  <button onclick="show('shop')">🏪 SHOP</button>
+  <button onclick="show('lb')">🏆 CLASSIFICA</button>
 </div>
 
-<!-- SLOT -->
-<div id="slot" class="screen">
-  <h2>🎰 SLOT</h2>
-  <button onclick="spin()">SPIN</button>
+<!-- GAME -->
+<div id="game" class="screen">
+
+  <h3 id="credits"></h3>
+  <h3 id="level"></h3>
+
+  <div id="slot3d">
+    <div id="reel" class="reel"></div>
+  </div>
+
+  <button onclick="spin()">SPIN 🎰</button>
+
+  <div>
+    <input id="code" placeholder="codice">
+    <button onclick="useCode()">🎁</button>
+  </div>
+
 </div>
 
 <!-- SHOP -->
 <div id="shop" class="screen">
-  <h2>🏪 SHOP</h2>
-  <button onclick="buy('luck')">Luck</button>
+  <h2>SHOP</h2>
+  <button onclick="buyLuck()">Luck</button>
+  <button onclick="buyBonus()">Bonus</button>
 </div>
 
-<!-- BATTLE PASS -->
-<div id="bp" class="screen">
-  <h2>🎫 BATTLE PASS</h2>
-  <div id="bpUI"></div>
-</div>
-
-<!-- MISSIONI -->
-<div id="ms" class="screen">
-  <h2>📅 MISSIONI</h2>
-  <div id="msUI"></div>
-</div>
-
-<!-- LEADERBOARD -->
+<!-- CLASSIFICA -->
 <div id="lb" class="screen">
-  <h2>🏆 CLASSIFICA</h2>
-  <div id="lbUI"></div>
+  <h2>CLASSIFICA</h2>
+  <div id="rank"></div>
+</div>
+
+<!-- AUDIO -->
+<div>
+  🔊 Volume <input type="range" min="0" max="1" step="0.01" onchange="vol=this.value">
 </div>
 
 <script>
 
-let users = JSON.parse(localStorage.getItem("u")||"{}");
-let cur=null;
+let users = JSON.parse(localStorage.getItem("peppo")||"{}");
+let currentUser=null;
 
-const symbols=["🍒","🍋","💎","7️⃣","⭐"];
+let symbols=["🍒","🍋","💎","7️⃣","⭐"];
+
+let angle=0;
+let vol=0.05;
+let audioCtx;
+
+/* MUSIC */
+function music(){
+  if(!audioCtx){
+    audioCtx=new AudioContext();
+  }
+
+  let osc=audioCtx.createOscillator();
+  let gain=audioCtx.createGain();
+
+  osc.type="sine";
+  osc.frequency.value=220+Math.random()*200;
+
+  gain.gain.value=vol;
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime+0.2);
+}
+
+/* VIBRATION */
+function vib(){
+  if(navigator.vibrate){
+    navigator.vibrate([80,40,80]);
+  }
+}
+
+/* BUILD SLOT 3D */
+function build(){
+  let reel=document.getElementById("reel");
+  reel.innerHTML="";
+
+  let step=360/symbols.length;
+
+  symbols.forEach((s,i)=>{
+    let d=document.createElement("div");
+    d.className="face";
+    d.innerText=s;
+    d.style.transform=`rotateX(${i*step}deg) translateZ(80px)`;
+    reel.appendChild(d);
+  });
+}
+
+build();
+
+/* REGISTER */
+function register(){
+  let n=nick.value;
+  let p=pass.value;
+
+  users[n]={
+    password:p,
+    credits:1000,
+    level:1,
+    xp:0,
+    luck:1,
+    bonus:1,
+    usedCodes:{}
+  };
+
+  localStorage.setItem("peppo",JSON.stringify(users));
+  alert("OK");
+}
 
 /* LOGIN */
 function login(){
   let n=nick.value;
+  let p=pass.value;
 
-  if(!users[n]){
-    users[n]={
-      credits:1000,
-      level:1,
-      xp:0,
-      battlepass:{level:1,xp:0},
-      missions:{spins:0,wins:0}
-    };
-  }
+  if(!users[n]||users[n].password!==p)
+    return alert("no");
 
-  cur=n;
+  currentUser=n;
 
   auth.style.display="none";
   topbar.style.display="block";
 
   show("home");
+  update();
 }
 
 /* NAV */
 function show(s){
-
   document.querySelectorAll(".screen").forEach(x=>x.style.display="none");
 
   if(s==="home")home.style.display="block";
-  if(s==="slot")slot.style.display="block";
+  if(s==="game")game.style.display="block";
   if(s==="shop")shop.style.display="block";
-  if(s==="bp")bp.style.display="block";
-  if(s==="ms")ms.style.display="block";
   if(s==="lb")lb.style.display="block";
-
-  update();
 }
 
-/* SLOT */
+/* SLOT 3D SPIN */
 function spin(){
 
-  let u=users[cur];
+  let u=users[currentUser];
 
-  let r=[
-    symbols[Math.floor(Math.random()*symbols.length)],
-    symbols[Math.floor(Math.random()*symbols.length)],
-    symbols[Math.floor(Math.random()*symbols.length)]
-  ];
+  vib();
+  music();
+
+  if(u.credits<10)return;
+
+  u.credits-=10;
+
+  let rand=Math.floor(Math.random()*symbols.length);
+
+  angle+=360*5+rand*(360/symbols.length);
+
+  document.getElementById("reel")
+    .style.transform=`rotateX(${angle}deg)`;
 
   let win=0;
 
-  if(r[0]===r[1]&&r[1]===r[2]){
-    win=500;
-    u.missions.wins++;
+  if(rand===0){
+    win=200*u.bonus;
   }
 
   u.credits+=win;
-  u.missions.spins++;
-
-  u.xp+=10;
-
-  let bp=u.battlepass;
-  bp.xp+=win?20:5;
-
-  if(bp.xp>=100){
-    bp.level++;
-    bp.xp=0;
-  }
+  u.xp+=win?50:10;
 
   if(u.xp>=100){
     u.level++;
     u.xp=0;
   }
 
-  save();
+  localStorage.setItem("peppo",JSON.stringify(users));
+
   update();
 }
 
 /* SHOP */
-function buy(t){
-  let u=users[cur];
-  if(t==="luck"&&u.credits>=500)u.credits-=500;
-  save();update();
+function buyLuck(){
+  let u=users[currentUser];
+  if(u.credits>=500)u.credits-=500;
+  localStorage.setItem("peppo",JSON.stringify(users));
+  update();
+}
+
+function buyBonus(){
+  let u=users[currentUser];
+  if(u.credits>=1000)u.credits-=1000;
+  localStorage.setItem("peppo",JSON.stringify(users));
+  update();
+}
+
+/* CODICI */
+function useCode(){
+  let u=users[currentUser];
+  let c=code.value;
+
+  let r={
+    pippo13:1000000,
+    peppino:10000
+  };
+
+  if(!r[c])return;
+
+  if(u.usedCodes[c])return;
+
+  u.credits+=r[c];
+  u.usedCodes[c]=true;
+
+  localStorage.setItem("peppo",JSON.stringify(users));
+  update();
 }
 
 /* UI */
-function updateBP(){
-  bpUI.innerHTML=`BP Lv ${users[cur].battlepass.level}`;
-}
-
-function updateMS(){
-  msUI.innerHTML=`Spins ${users[cur].missions.spins}<br>Wins ${users[cur].missions.wins}`;
-}
-
-function updateLB(){
-  let arr=Object.entries(users)
-  .sort((a,b)=>b[1].credits-a[1].credits)
-  .slice(0,10);
-
-  lbUI.innerHTML=arr.map((x,i)=>`#${i+1} ${x[0]} ${x[1].credits}`).join("<br>");
-}
-
 function update(){
-  if(!cur)return;
-  updateBP();
-  updateMS();
-  updateLB();
+  let u=users[currentUser];
+  if(!u)return;
+
+  credits.innerText="💰 "+u.credits;
+  level.innerText="⭐ "+u.level;
+
+  let arr=Object.entries(users)
+  .sort((a,b)=>b[1].credits-a[1].credits);
+
+  rank.innerHTML=arr.map((x,i)=>
+    `${i+1}. ${x[0]} - ${x[1].credits}`
+  ).join("<br>");
 }
 
-function save(){
-  localStorage.setItem("u",JSON.stringify(users));
+function logout(){
+  currentUser=null;
+  auth.style.display="block";
+  topbar.style.display="none";
 }
 
 </script>

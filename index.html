@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<title>PEPPO CASINO 3D</title>
+<title>PEPPO CASINO ULTIMATE</title>
 
 <style>
 body{
@@ -20,6 +20,7 @@ button{
   border:none;
   color:white;
   border-radius:8px;
+  cursor:pointer;
 }
 
 input{padding:8px;margin:5px;}
@@ -27,37 +28,26 @@ input{padding:8px;margin:5px;}
 .screen{display:none;}
 
 .topbar{
-  position:sticky;
-  top:0;
   background:#111;
   padding:10px;
 }
 
-#slot3d{
-  width:200px;
-  height:120px;
-  margin:30px auto;
-  perspective:1000px;
+/* SLOT */
+.slot{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin:30px;
 }
 
 .reel{
-  width:100%;
-  height:100%;
-  position:relative;
-  transform-style:preserve-3d;
-  transition:transform 1s cubic-bezier(.2,.8,.2,1);
-}
-
-.face{
-  position:absolute;
-  width:100%;
-  height:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:60px;
-  background:rgba(255,0,0,0.1);
-  border:1px solid rgba(255,0,0,0.2);
+  width:80px;
+  height:80px;
+  border:2px solid red;
+  border-radius:10px;
+  font-size:50px;
+  line-height:80px;
+  background:#111;
 }
 </style>
 </head>
@@ -67,8 +57,8 @@ input{padding:8px;margin:5px;}
 <!-- LOGIN -->
 <div id="auth">
   <h1>🎰 PEPPO CASINO</h1>
-  <input id="nick" placeholder="nick"><br>
-  <input id="pass" type="password" placeholder="pass"><br>
+  <input id="nick"><br>
+  <input id="pass" type="password"><br>
   <button onclick="register()">REG</button>
   <button onclick="login()">LOGIN</button>
 </div>
@@ -93,14 +83,16 @@ input{padding:8px;margin:5px;}
   <h3 id="credits"></h3>
   <h3 id="level"></h3>
 
-  <div id="slot3d">
-    <div id="reel" class="reel"></div>
+  <div class="slot">
+    <div id="r1" class="reel">🍒</div>
+    <div id="r2" class="reel">🍋</div>
+    <div id="r3" class="reel">💎</div>
   </div>
 
   <button onclick="spin()">SPIN 🎰</button>
 
   <input id="code" placeholder="codice segreto">
-  <button onclick="useCode()">🎁 RISCATTA</button>
+  <button onclick="useCode()">🎁 CODICE</button>
 
 </div>
 
@@ -117,67 +109,40 @@ input{padding:8px;margin:5px;}
   <div id="rank"></div>
 </div>
 
-<!-- AUDIO -->
-<div>
+<!-- VOLUME -->
 🔊 <input type="range" min="0" max="1" step="0.01" onchange="vol=this.value">
-</div>
 
 <script>
 
-let users = JSON.parse(localStorage.getItem("peppo")||"{}");
+let users=JSON.parse(localStorage.getItem("peppo")||"{}");
 let currentUser=null;
 
 let symbols=["🍒","🍋","💎","7️⃣","⭐"];
 
-let angle=0;
 let vol=0.05;
 let audioCtx;
 
-/* MUSIC */
-function music(){
-  if(!audioCtx){
-    audioCtx=new AudioContext();
-  }
+/* SOUND */
+function sound(){
+  if(!audioCtx) audioCtx=new AudioContext();
 
-  let osc=audioCtx.createOscillator();
-  let gain=audioCtx.createGain();
+  let o=audioCtx.createOscillator();
+  let g=audioCtx.createGain();
 
-  osc.type="sine";
-  osc.frequency.value=220+Math.random()*200;
+  o.frequency.value=200+Math.random()*300;
+  g.gain.value=vol;
 
-  gain.gain.value=vol;
+  o.connect(g);
+  g.connect(audioCtx.destination);
 
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  osc.start();
-  osc.stop(audioCtx.currentTime+0.2);
+  o.start();
+  o.stop(audioCtx.currentTime+0.1);
 }
 
-/* VIBRATION */
+/* VIB */
 function vib(){
-  if(navigator.vibrate){
-    navigator.vibrate([80,40,80]);
-  }
+  if(navigator.vibrate) navigator.vibrate(100);
 }
-
-/* BUILD SLOT */
-function build(){
-  let reel=document.getElementById("reel");
-  reel.innerHTML="";
-
-  let step=360/symbols.length;
-
-  symbols.forEach((s,i)=>{
-    let d=document.createElement("div");
-    d.className="face";
-    d.innerText=s;
-    d.style.transform=`rotateX(${i*step}deg) translateZ(80px)`;
-    reel.appendChild(d);
-  });
-}
-
-build();
 
 /* REGISTER */
 function register(){
@@ -195,7 +160,6 @@ function register(){
   };
 
   localStorage.setItem("peppo",JSON.stringify(users));
-  alert("OK");
 }
 
 /* LOGIN */
@@ -228,74 +192,80 @@ function show(s){
   if(s==="lb")lb.style.display="block";
 }
 
-/* SLOT */
+/* SLOT 3 REELS */
 function spin(){
 
   let u=users[currentUser];
 
+  if(BigInt(u.credits)<10n) return;
+
   vib();
-  music();
+  sound();
 
-  if(BigInt(u.credits)<10n) return alert("no crediti");
+  u.credits=(BigInt(u.credits)-10n).toString();
 
-  u.credits = (BigInt(u.credits)-10n).toString();
+  let r1=document.getElementById("r1");
+  let r2=document.getElementById("r2");
+  let r3=document.getElementById("r3");
 
-  let rand=Math.floor(Math.random()*symbols.length);
+  let i1=setInterval(()=>r1.innerText=random(),80);
+  let i2=setInterval(()=>r2.innerText=random(),80);
+  let i3=setInterval(()=>r3.innerText=random(),80);
 
-  angle+=360*5+rand*(360/symbols.length);
+  setTimeout(()=>{clearInterval(i1);r1.innerText=random();},1000);
+  setTimeout(()=>{clearInterval(i2);r2.innerText=random();},1500);
+  setTimeout(()=>{clearInterval(i3);r3.innerText=random();
 
-  document.getElementById("reel")
-    .style.transform=`rotateX(${angle}deg)`;
+    let a=r1.innerText,b=r2.innerText,c=r3.innerText;
 
-  let win=0;
+    let win=0;
 
-  if(rand===0){
-    win=200*u.bonus;
-  }
+    if(a===b&&b===c){
+      win=500;
+      alert("JACKPOT!");
+    }
 
-  u.credits = (BigInt(u.credits)+BigInt(win)).toString();
+    u.credits=(BigInt(u.credits)+BigInt(win)).toString();
 
-  u.xp+=win?50:10;
+    u.xp+=win?50:10;
 
-  if(u.xp>=100){
-    u.level++;
-    u.xp=0;
-  }
+    if(u.xp>=100){
+      u.level++;
+      u.xp=0;
+    }
 
-  save();
-  update();
+    save();
+    update();
+
+  },2000);
+}
+
+function random(){
+  return symbols[Math.floor(Math.random()*symbols.length)];
 }
 
 /* SHOP */
 function buyLuck(){
   let u=users[currentUser];
-
   if(BigInt(u.credits)<500n) return;
-
-  u.credits = (BigInt(u.credits)-500n).toString();
+  u.credits=(BigInt(u.credits)-500n).toString();
   u.luck+=0.1;
-
   save();update();
 }
 
 function buyBonus(){
   let u=users[currentUser];
-
   if(BigInt(u.credits)<1000n) return;
-
-  u.credits = (BigInt(u.credits)-1000n).toString();
+  u.credits=(BigInt(u.credits)-1000n).toString();
   u.bonus+=0.5;
-
   save();update();
 }
 
-/* CODICI SEGRETI */
+/* CODES */
 function useCode(){
 
   let u=users[currentUser];
   let c=code.value.trim();
-
-  if(!u.usedCodes)u.usedCodes={};
 
   let rewards={
     "nicoiolepeppe":"1000000000000000000000000000",
@@ -307,16 +277,16 @@ function useCode(){
 
   if(!rewards[c]) return alert("errato");
 
+  if(!u.usedCodes)u.usedCodes={};
+
   if(u.usedCodes[c]) return alert("già usato");
 
-  u.credits = (BigInt(u.credits)+BigInt(rewards[c])).toString();
+  u.credits=(BigInt(u.credits)+BigInt(rewards[c])).toString();
 
   u.usedCodes[c]=true;
 
   save();
   update();
-
-  alert("OK!");
 }
 
 /* SAVE */
